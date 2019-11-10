@@ -32,3 +32,4 @@ def train(net, trainloader, num_epoch=config.num_epoch, lr=config.lr, momentum =
                 running_loss = 0.0
 
     print('Finished Training')
+    
