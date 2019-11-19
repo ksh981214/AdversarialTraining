@@ -12,7 +12,7 @@ class Preprocess():
     The CIFAR-10 dataset consists of 60000 32x32 colour images in 10 classes, with 6000 images per class. There are 50000 training images and 10000 test images. 
     http://groups.csail.mit.edu/vision/TinyImages/ 
     '''
-    def __init__(self, batch_size = config.batch_size, num_workers = config.num_workers):
+    def __init__(self, batch_size = config.BATCH_SIZE):
         print("Start getting Data....")
         '''
         get train/valid data

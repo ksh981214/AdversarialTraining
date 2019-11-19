@@ -12,6 +12,11 @@ import torchvision.transforms as transforms
 from model import VGG
 from config import config
 
+def imshow(img):
+    img = img / 2 + 0.5     # unnormalize
+    #npimg = img.numpy()
+    plt.imshow(np.transpose(img, (1, 2, 0)))
+    plt.show()
 
 class Classifier():
   
@@ -26,16 +31,14 @@ class Classifier():
   
   def plot_prediction(self, image, label):
     with torch.no_grad():
-        
-        image = image.detach().numpy()
-        image = image.reshape((32,32,3))
-        x = self.transform(image).to(self.device)
+
+        x= image
         y = self.net(x.unsqueeze(0))
-        y = nn.functional.softmax(y, dim=1).cpu().numpy()[0]
+        y = nn.functional.softmax(y, dim=1).cpu()[0]
         fig = plt.figure(figsize=(10, 2))
         fig.add_subplot(1, 2, 1)
         plt.title(config.classes[label])
-        plt.imshow(image)
+        plt.imshow(np.transpose(image.numpy(),(1,2,0)))
         fig.add_subplot(1, 2, 2)
         plt.title('probs')
         plt.barh(np.arange(len(y)), y)
@@ -45,10 +48,9 @@ class Classifier():
   
   def predict(self, image):
     with torch.no_grad():
-        image = image.detach().numpy()
-        image = image.reshape((32,32,3))
-        x = self.transform(image).to(self.device)
+        x = image
         y = self.net(x.unsqueeze(0))
-        y = nn.functional.softmax(y, dim=1).cpu().numpy()[0]
-
-        return y[np.argmax(y)]
+        y = nn.functional.softmax(y, dim=1).cpu()[0] #1,10
+    
+        #print("y's sum: {}".format(np.sum(y)))
+        return y

@@ -1,30 +1,46 @@
-import torch
-import torch.optim as optim
-import torch.nn as nn
-import numpy as np
-from config import config
+#import numpy as np
 
-import random
+from loss import Loss
+from utils import map_label_to_target
+
+import torch
+from torch.autograd import Variable
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+from PIL import Image
+
+import torch.optim as optim
 
 import matplotlib.pyplot as plt
+
+from config import config
+
 def imshow(img):
-    #img = img / 2 + 0.5     # unnormalize
-    npimg = img.numpy()
+    img = img / 2 + 0.5     # unnormalize
+    npimg = img.detach().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
-
-
-def CrossEntropy(yHat, y):
-    if y == 1:
-        return -np.log(yHat)
-    else:
-        return -np.log(1 - yHat)
-
-def atn_train(trg_model, atn, trainloader, num_epoch=config.num_epoch, lr=config.lr, momentum = config.momentum):    
-    cls_loss = None
-    re_loss = nn.MSELoss()
+def imsave(img, label):
+    img = img / 2 + 0.5     # unnormalize
+    img = img.detach().numpy()
+    img = np.transpose(img, (1, 2, 0))
+    img = Image.fromarray(img,'RGB')
+    name = label + ".png"
+    img.save(name)
+    #img.show()
     
-    optimizer = optim.SGD(atn.parameters(), lr=lr, momentum=momentum)
+    
+def freeze_model(net):
+    for param in net.parameters():
+        param.requires_grad = False
+
+def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):    
+    
+    #freeze_model(trg_model)
+    
+    optimizer = optim.RMSprop(
+        atn.parameters(), lr=config.LEARNING_RATE, momentum=config.MOMENTUM)
     
     for epoch in range(num_epoch):   # 데이터셋을 수차례 반복합니다.
         running_loss = 0.0
@@ -32,54 +48,64 @@ def atn_train(trg_model, atn, trainloader, num_epoch=config.num_epoch, lr=config
             # [inputs, labels]의 목록인 data로부터 입력을 받은 후
             inputs, labels = data
             
-            #print(len(inputs))
-
+            inputs = inputs.to(config.device) #tensor, 32, 3, 32, 32
+            labels = labels.to(config.device) #tensor, 32
+            #print("inputs's size: {}".format(inputs.size()))
+            #print("labels's size: {}".format(labels.size()))
+            
+            # set labels to one-hot
+#            labels = labels_to_onehot(labels, num_classes)
+            # map labels to target
+            targets = map_label_to_target(labels, t=config.T) #list, 32
+            #print("labels: {}".format(labels))
+            #print("targets: {}".format(targets))
+            #print("targets's size: {}".format(len(targets)))
+            
+        
             # 변화도(Gradient) 매개변수를 0으로 만들고
             optimizer.zero_grad()
 
-            # 순전파 + 역전파 + 최적화를 한 후
-
-            t = [random.randint(0, config.num_classes-1) for _ in range(config.batch_size)]
-            #print(t)
-            x= inputs
-            x_dot_batch = atn.forward(x,t)
-
-            #Reconstruction Loss with x, x'
-            reconstruction_loss = re_loss(x, x_dot_batch)
+            atn_outputs = atn(inputs) #tensor, 32, 3, 32, 32
+            #print("atn_output's shape: {}".format(atn_outputs.shape))
+            #print("atn_output's type: {}".format(type(atn_outputs)))
             
-            #Classification Loss with label, k(want to this target)
-            outputs=[]
             
-            for idx,x_dot in enumerate(x_dot_batch):
-                #print(x_dot.size()) #3,32,32
-                outputs.append(trg_model.predict(x_dot)) #argmax를 뱉어냄
-                if i % 10==0:
-                    trg_model.plot_prediction(x_dot, labels[idx])
-            #print(outputs)
-            #outputs = torch.Tensor(outputs)
-            #t = torch.Tensor(t)
-            #print(outputs)
-            #print(t)
-            classification_loss=0
-            for i in range(config.batch_size):
-                classification_loss += CrossEntropy(outputs[t[i]],t[i])
+            #print(config.classes[labels[0]])
+            #imshow(inputs[0])
             
-            classification_loss /= config.batch_size
-            #classification_loss = torch.Tensor(classification_loss)
+            #print(atn_outputs[0])
+            #imshow(atn_outputs[0])
             
-            #print(classification_loss)
-            #print(reconstruction_loss)
+            # victim forward (y_hat)
+            normal_outputs = torch.zeros(config.BATCH_SIZE, config.num_classes, dtype=torch.float32) 
+            #print("normal_outputs's size : {}".format(normal_outputs.shape))
+            for idx, _input in enumerate(inputs):
+                normal_outputs[idx,:] = trg_model.predict(_input).squeeze()
+                imshow(_input)
+                #imsave(_input, config.classes[labels[idx]])
+                #trg_model.plot_prediction(_input,labels[idx])
+                
+                
+            fooled_outputs = torch.zeros(config.BATCH_SIZE, config.num_classes, dtype=torch.float32)
+            #print("fooled_outputs's size : {}".format(fooled_outputs.shape))
+            for idx, atn_output in enumerate(atn_outputs):
+                fooled_outputs[idx,:] = trg_model.predict(atn_output).squeeze()
+                #imshow(atn_output)
+                #trg_model.plot_prediction(atn_output, labels[idx])
             
-            loss = classification_loss + config.alpha * reconstruction_loss
-            #print(loss)
+            # preprocess target
+            # get loss
+            loss = Loss.ATN_loss(x_hat=atn_outputs, x=inputs,
+                                 y_hat=fooled_outputs, y=normal_outputs, t=targets, alpha=config.ALPHA, beta=config.BETA)
+            
             loss.backward()
             optimizer.step()
 
-            # 통계를 출력합니다.
-            print("i: %d : , loss: %f " % (i, loss))
-#             running_loss += loss.item()
-#             if i % 10 == 0:    # print every 2000 mini-batches
-#                 print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss/10))
-#                 running_loss = 0.0
+            running_loss += loss.data
+            if i % 10 == 9:    # print every 2000 mini-batches
+                print('[%d, %5d] loss: %.6f' %
+                      (epoch + 1, i + 1, running_loss / 10))
+                running_loss = 0.0
+                
 
     print('Finished Training')
