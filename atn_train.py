@@ -4,13 +4,13 @@ from loss import Loss
 from utils import map_label_to_target
 
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from PIL import Image
-
 import torch.optim as optim
+
+import numpy as np
+
+from PIL import Image
 
 import matplotlib.pyplot as plt
 
@@ -21,28 +21,15 @@ def imshow(img):
     npimg = img.detach().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
-def imsave(img, label):
+def imsave(img, label, epoch, iteration):
     img = img / 2 + 0.5     # unnormalize
     img = img.detach().numpy()
     img = np.transpose(img, (1, 2, 0))
     img = Image.fromarray(img,'RGB')
-    name = label + ".png"
+    name = str(epoch)+"_"+str(iteration)+"_"+label + ".png"
     img.save(name)
-    #img.show()
-<<<<<<< HEAD
 
 def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):    
-=======
-    
-    
-def freeze_model(net):
-    for param in net.parameters():
-        param.requires_grad = False
-
-def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):    
-    
-    #freeze_model(trg_model)
->>>>>>> a2f6790205a8572af9fa97268fe35fbbe4837e6d
     
     optimizer = optim.RMSprop(
         atn.parameters(), lr=config.LEARNING_RATE, momentum=config.MOMENTUM)
@@ -86,11 +73,7 @@ def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):
             #print("normal_outputs's size : {}".format(normal_outputs.shape))
             for idx, _input in enumerate(inputs):
                 normal_outputs[idx,:] = trg_model.predict(_input).squeeze()
-<<<<<<< HEAD
                 #imshow(_input)
-=======
-                imshow(_input)
->>>>>>> a2f6790205a8572af9fa97268fe35fbbe4837e6d
                 #imsave(_input, config.classes[labels[idx]])
                 #trg_model.plot_prediction(_input,labels[idx])
                 
@@ -99,11 +82,8 @@ def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):
             #print("fooled_outputs's size : {}".format(fooled_outputs.shape))
             for idx, atn_output in enumerate(atn_outputs):
                 fooled_outputs[idx,:] = trg_model.predict(atn_output).squeeze()
-<<<<<<< HEAD
                 #print(config.classes[labels[idx]])
                 #imshow(inputs[idx])
-=======
->>>>>>> a2f6790205a8572af9fa97268fe35fbbe4837e6d
                 #imshow(atn_output)
                 #trg_model.plot_prediction(atn_output, labels[idx])
             
@@ -116,7 +96,6 @@ def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):
             optimizer.step()
 
             running_loss += loss.data
-<<<<<<< HEAD
             if i % 100 == 99:    # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.6f' %
                       (epoch + 1, i + 1, running_loss / 100))
@@ -124,12 +103,6 @@ def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):
                 print(config.classes[labels[0]])
                 imshow(inputs[0])
                 imshow(atn_outputs[0])
-=======
-            if i % 10 == 9:    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.6f' %
-                      (epoch + 1, i + 1, running_loss / 10))
-                running_loss = 0.0
->>>>>>> a2f6790205a8572af9fa97268fe35fbbe4837e6d
                 
 
     print('Finished Training')

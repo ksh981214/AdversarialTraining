@@ -4,13 +4,13 @@ from loss import Loss
 from utils import map_label_to_target
 
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from PIL import Image
-
 import torch.optim as optim
+
+import numpy as np
+
+from PIL import Image
 
 import matplotlib.pyplot as plt
 
@@ -21,14 +21,13 @@ def imshow(img):
     npimg = img.detach().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
     plt.show()
-def imsave(img, label):
+def imsave(img, label, epoch, iteration):
     img = img / 2 + 0.5     # unnormalize
     img = img.detach().numpy()
     img = np.transpose(img, (1, 2, 0))
     img = Image.fromarray(img,'RGB')
-    name = label + ".png"
+    name = str(epoch)+"_"+str(iteration)+"_"+label + ".png"
     img.save(name)
-    #img.show()
 
 def atn_train(trg_model, atn, trainloader, num_epoch=config.EPOCH_NUM):    
     

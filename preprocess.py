@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import torch
 import torchvision
 import torchvision.datasets as datasets

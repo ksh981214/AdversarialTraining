@@ -3,7 +3,6 @@ from atn_network import ATN_c
 from classifier import Classifier
 from atn_train import atn_train
 
-
 from config import config
 
 def main():

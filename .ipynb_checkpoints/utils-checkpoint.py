@@ -3,10 +3,6 @@ import numpy as np
 
 from config import config
 
-# parameters
-# y: forward result (batch_size, # of classes)
-# t: target (batch_size, )
-# alpha: parameter
 def reranking(y, t, alpha):
     batch_y_norm = np.zeros((config.BATCH_SIZE, config.num_classes))
     for idx,data in enumerate(y.data):
