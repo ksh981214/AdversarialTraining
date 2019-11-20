@@ -11,7 +11,7 @@ import torch.optim as optim
 
 #torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros')
 
-# ATN_c for cifar10, just AutoEncoderDecoder for cifar10
+# ATN_c for cifar10
 class ATN_c(nn.Module):
 
     def __init__(self):
